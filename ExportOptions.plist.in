@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>${QT_MAC_PKG_DISTRIBUTION_METHOD}</string>
+    ${QT_MAC_INSTALLER_SIGNING_CERTIFICATE_KEY}
+    ${QT_MAC_PROVISIONING_PROFILES_KEY}
+    <key>signingCertificate</key>
+    <string>${QT_MAC_CODE_SIGN_IDENTITY}</string>
+    <key>signingStyle</key>
+    <string>${QT_MAC_EXPORT_SIGNING_TYPE}</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>teamID</key>
+    <string>${QT_MAC_TEAM_ID}</string>
+    ${QT_MAC_PKG_UPLOAD_SYMBOLS_KEY}
+</dict>
+</plist>
