@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-include(cmake/AddQtMacAppImage.cmake)
+include(AddQtMacApp.cmake)
 
 set(QT_MAC_QT_ROOT ${QT_MAC_QT_ROOT} CACHE STRING "qt sdk root folder")
 set(QT_MAC_SOURCE_DIR ${QT_MAC_SOURCE_DIR} CACHE STRING "add_qt_mac_app CMakeLists.txt folder")
