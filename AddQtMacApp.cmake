@@ -473,8 +473,9 @@ function(add_qt_mac_app TARGET)
     add_custom_target(${QT_MAC_TARGET_DMG}
       ${QT_MAC_ALL}
       DEPENDS ${TARGET} ${ARGMAC_DEPENDS}
+      COMMAND echo "Remove old dmg $<TARGET_BUNDLE_DIR:${TARGET}>/../$<TARGET_FILE_NAME:${TARGET}>.dmg"
+      COMMAND ${CMAKE_COMMAND} -E rm -f $<TARGET_BUNDLE_DIR:${TARGET}>/../$<TARGET_FILE_NAME:${TARGET}>.dmg
       COMMAND echo "Run macdeployqt for dmg"
-      COMMAND ${CMAKE_COMMAND} -E rm -f $<TARGET_BUNDLE_DIR:${TARGET}>/$<TARGET_FILE_NAME:${TARGET}>.dmg
       COMMAND ${QT_MAC_DEPLOY_APP} $<TARGET_BUNDLE_DIR:${TARGET}> ${QT_MAC_OPT} -dmg
 
       COMMENT "Deploy dmg with ${QT_MAC_DEPLOY_APP}"
