@@ -209,7 +209,7 @@ function(add_qt_mac_app TARGET)
   if(QT_MAC_ITS_ENCRYPTION_EXPORT_COMPLIANCE_CODE)
     set(QT_MAC_ITS_ENCRYPTION_KEYS "<key>ITSAppUsesNonExemptEncryption</key><true/>\n    <key>ITSEncryptionExportComplianceCode</key>\n    <string>${QT_MAC_ITS_ENCRYPTION_EXPORT_COMPLIANCE_CODE}</string>" PARENT_SCOPE)
   else()
-    set(QT_MAC_ITS_ENCRYPTIONKEYS "<key>ITSAppUsesNonExemptEncryption</key><false/>" PARENT_SCOPE)
+    set(QT_MAC_ITS_ENCRYPTION_KEYS "<key>ITSAppUsesNonExemptEncryption</key><false/>" PARENT_SCOPE)
   endif()
 
   # Warning if no version
