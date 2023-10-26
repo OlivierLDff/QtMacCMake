@@ -31,6 +31,7 @@ To sign your app you need at least a team id and a signing identity. I recommand
 * `QT_MAC_TEAM_ID`: Same as `TEAM_ID` option, can be useful to specify at configure time, not in source code.
 * `QT_MAC_CODE_SIGN_IDENTITY`: Same as `CODE_SIGN_IDENTITY` option, can be useful to specify at configure time, not in source code.
 * `QT_MAC_PROVISIONING_PROFILE_SPECIFIER`: Same as `PROVISIONING_PROFILE_SPECIFIER` option, can be useful to specify at configure time, not in source code.
+- `QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY`: Same as `SIGN_FOR_NOTARIZATION_IDENTITY` option, can be useful to specify at configure time, not in source code.
 
 Use `Developer ID Application` for `dmg`.
 
@@ -219,6 +220,10 @@ add_qt_ios_app(MyApp
     CODE_SIGN_IDENTITY "Mac Developer"
 )
 ```
+
+**SIGN_FOR_NOTARIZATION_IDENTITY**
+
+Code signing is required in order to deploy to real ios device (ie non simulator). More info [here](https://developer.apple.com/support/code-signing/).
 
 **TEAM_ID**
 

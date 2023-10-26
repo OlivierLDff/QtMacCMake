@@ -71,6 +71,9 @@ function(add_qt_mac_app TARGET)
     NO_STRIP
     NO_PLUGINS
     VERBOSE
+    HARDENED_RUNTIME
+    APPSTORE_COMPLIANT
+    SECURE_TIMESTAMP
   )
 
   set(QT_MAC_ONE_VALUE_ARG
@@ -83,6 +86,7 @@ function(add_qt_mac_app TARGET)
     CUSTOM_ENTITLEMENTS
     CUSTOM_PLIST
     CODE_SIGN_IDENTITY
+    SIGN_FOR_NOTARIZATION_IDENTITY
     TEAM_ID
     PROVISIONING_PROFILE_SPECIFIER
     COPYRIGHT
@@ -140,6 +144,11 @@ function(add_qt_mac_app TARGET)
   endif()
   if("${QT_MAC_CODE_SIGN_IDENTITY}" STREQUAL "")
     set(QT_MAC_CODE_SIGN_IDENTITY "Mac Development")
+  endif()
+
+  # Allow user to override QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY from cache/command line
+  if(NOT QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY)
+    set(QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY ${ARGMAC_SIGN_FOR_NOTARIZATION_IDENTITY})
   endif()
 
   # Allow user to override QT_MAC_TEAM_ID from cache/command line
@@ -206,7 +215,7 @@ function(add_qt_mac_app TARGET)
   if(QT_MAC_ITS_ENCRYPTION_EXPORT_COMPLIANCE_CODE)
     set(QT_MAC_ITS_ENCRYPTION_KEYS "<key>ITSAppUsesNonExemptEncryption</key><true/>\n    <key>ITSEncryptionExportComplianceCode</key>\n    <string>${QT_MAC_ITS_ENCRYPTION_EXPORT_COMPLIANCE_CODE}</string>" PARENT_SCOPE)
   else()
-    set(QT_MAC_ITS_ENCRYPTION_KEYS "<key>ITSAppUsesNonExemptEncryption</key><false/>" PARENT_SCOPE)
+    set(QT_MAC_ITS_ENCRYPTIONKEYS "<key>ITSAppUsesNonExemptEncryption</key><false/>" PARENT_SCOPE)
   endif()
 
   # Warning if no version
@@ -287,10 +296,15 @@ function(add_qt_mac_app TARGET)
     message(STATUS "CUSTOM_PLIST                        : ${QT_MAC_CUSTOM_PLIST}")
     message(STATUS "CUSTOM_ENTITLEMENTS                 : ${QT_MAC_CUSTOM_ENTITLEMENTS}")
     message(STATUS "CODE_SIGN_IDENTITY                  : ${QT_MAC_CODE_SIGN_IDENTITY}")
+    message(STATUS "SIGN_FOR_NOTARIZATION_IDENTITY      : ${QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY}")
     message(STATUS "TEAM_ID                             : ${QT_MAC_TEAM_ID}")
     if(QT_MAC_PROVISIONING_PROFILE_SPECIFIER)
       message(STATUS "PROVISIONING_PROFILE_SPECIFIER      : ${QT_MAC_PROVISIONING_PROFILE_SPECIFIER}")
     endif()
+    message(STATUS "APPSTORE_COMPLIANT                  : ${ARGMAC_APPSTORE_COMPLIANT}")
+    message(STATUS "SECURE_TIMESTAMP                    : ${ARGMAC_SECURE_TIMESTAMP}")
+    message(STATUS "HARDENED_RUNTIME                    : ${ARGMAC_HARDENED_RUNTIME}")
+    message(STATUS "QML_DIR                             : ${QT_MAC_QML_DIR}")
     message(STATUS "COPYRIGHT                           : ${QT_MAC_COPYRIGHT}")
     message(STATUS "APPLICATION_CATEGORY_TYPE           : ${QT_MAC_APPLICATION_CATEGORY_TYPE}")
     message(STATUS "CATALOG_APPICON                     : ${QT_MAC_CATALOG_APPICON}")
@@ -376,6 +390,21 @@ function(add_qt_mac_app TARGET)
     set(QT_MAC_PLUGINS_OPT -no-plugins)
   endif()
 
+  # -appstore-compliant
+  if(ARGMAC_APPSTORE_COMPLIANT)
+    set(QT_MAC_APPSTORE_COMPLIANT_OPT -appstore-compliant)
+  endif()
+
+  # -hardened-runtime
+  if(ARGMAC_HARDENED_RUNTIME)
+    set(QT_MAC_HARDENED_RUNTIME_OPT -hardened-runtime)
+  endif()
+
+  # -timestamp
+  if(ARGMAC_SECURE_TIMESTAMP)
+    set(QT_MAC_SECURE_TIMESTAMP_OPT -timestamp)
+  endif()
+
   # -qmldir
   if(QT_MAC_QML_DIR)
     set(QT_MAC_QML_DIR_OPT -qmldir=${QT_MAC_QML_DIR})
@@ -402,6 +431,19 @@ function(add_qt_mac_app TARGET)
       set(QT_MAC_CODESIGN_OPT "-codesign=${CMAKE_MATCH_1}")
     endif()
 
+    if(NOT "${QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY}" STREQUAL "")
+      # Find notarization certificate to sign libraries deployed by macdeployqt
+      string(REGEX MATCH "([0-9A-Z]+) \"[ :.@\"a-zA-Z0-9]*${QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY}[ :.@\"a-zA-Z0-9]*\\(${QT_MAC_TEAM_ID}\\)\"" CODESIGN_LINE "${XCODE_CODE_SIGNING_IDENTITIES}")
+
+      if("${CMAKE_MATCH_1}" STREQUAL "")
+        message(WARNING "Fail to find private key for notarization signing matching TEAM_ID ${QT_MAC_TEAM_ID} and identity ${QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY}")
+      else()
+        set(QT_MAC_SIGN_FOR_NOTARIZATION_OPT "-sign-for-notarization=${CMAKE_MATCH_1}")
+      endif()
+    else()
+      message(WARNING "The app won't be signed for notarization because QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY isn't set")
+    endif()
+
     # Find signing certificate to create ipa
     string(REGEX MATCH "([0-9A-Z]+) \"[ :.@\"a-zA-Z0-9]*Mac Distribution Installer[ :.@\"a-zA-Z0-9]*\\(${QT_MAC_TEAM_ID}\\)\"" INSTALLER_CERTIFICATE_LINE "${XCODE_CODE_SIGNING_IDENTITIES}")
 
@@ -421,8 +463,11 @@ function(add_qt_mac_app TARGET)
     ${QT_MAC_PLUGINS_OPT}
     ${QT_MAC_STRIP_OPT}
     ${QT_MAC_VERBOSE_OPT}
+    ${QT_MAC_APPSTORE_COMPLIANT_OPT}
+    ${QT_MAC_HARDENED_RUNTIME_OPT}
+    ${QT_MAC_SECURE_TIMESTAMP_OPT}
     ${QT_MAC_CODESIGN_OPT}
-      -appstore-compliant
+    ${QT_MAC_SIGN_FOR_NOTARIZATION_OPT}
   )
 
   # Call macdeployqt
