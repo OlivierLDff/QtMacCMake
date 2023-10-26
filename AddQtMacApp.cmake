@@ -71,6 +71,9 @@ function(add_qt_mac_app TARGET)
     NO_STRIP
     NO_PLUGINS
     VERBOSE
+    HARDENED_RUNTIME
+    APPSTORE_COMPLIANT
+    SECURE_TIMESTAMP
   )
 
   set(QT_MAC_ONE_VALUE_ARG
@@ -291,6 +294,10 @@ function(add_qt_mac_app TARGET)
     if(QT_MAC_PROVISIONING_PROFILE_SPECIFIER)
       message(STATUS "PROVISIONING_PROFILE_SPECIFIER      : ${QT_MAC_PROVISIONING_PROFILE_SPECIFIER}")
     endif()
+    message(STATUS "APPSTORE_COMPLIANT                  : ${ARGMAC_APPSTORE_COMPLIANT}")
+    message(STATUS "SECURE_TIMESTAMP                    : ${ARGMAC_SECURE_TIMESTAMP}")
+    message(STATUS "HARDENED_RUNTIME                    : ${ARGMAC_HARDENED_RUNTIME}")
+    message(STATUS "QML_DIR                             : ${QT_MAC_QML_DIR}")
     message(STATUS "COPYRIGHT                           : ${QT_MAC_COPYRIGHT}")
     message(STATUS "APPLICATION_CATEGORY_TYPE           : ${QT_MAC_APPLICATION_CATEGORY_TYPE}")
     message(STATUS "CATALOG_APPICON                     : ${QT_MAC_CATALOG_APPICON}")
@@ -345,6 +352,10 @@ function(add_qt_mac_app TARGET)
     qt_mac_set_xcode_property (${TARGET} ASSETCATALOG_COMPILER_APPICON_NAME ${QT_MAC_CATALOG_APPICON})
   endif()
 
+  if(QT_MAC_BUNDLE_IDENTIFIER)
+    qt_mac_set_xcode_property(${TARGET} PRODUCT_BUNDLE_IDENTIFIER ${QT_MAC_BUNDLE_IDENTIFIER})
+  endif()
+
   # Make sure a publish dialog is set in XCode.
   # If INSTALL_PATH is empty it won't be possible to deploy to App Store
   qt_mac_set_xcode_property(${TARGET} INSTALL_PATH "/Applications")
@@ -360,6 +371,9 @@ function(add_qt_mac_app TARGET)
   set(MACOSX_BUNDLE_LONG_VERSION_STRING ${QT_MAC_LONG_VERSION} PARENT_SCOPE)
   set(MACOSX_BUNDLE_COPYRIGHT ${QT_MAC_COPYRIGHT} PARENT_SCOPE)
 
+  # Set OUTPUT_NAME to QT_MAC_NAME
+  set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME ${QT_MAC_NAME})
+
   # Set Custom pList
   set_target_properties(${TARGET} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${QT_MAC_CUSTOM_PLIST})
 
@@ -374,6 +388,21 @@ function(add_qt_mac_app TARGET)
   # -no-plugins
   if(ARGMAC_NO_PLUGINS)
     set(QT_MAC_PLUGINS_OPT -no-plugins)
+  endif()
+
+  # -appstore-compliant
+  if(ARGMAC_APPSTORE_COMPLIANT)
+    set(QT_MAC_APPSTORE_COMPLIANT_OPT -appstore-compliant)
+  endif()
+
+  # -hardened-runtime
+  if(ARGMAC_HARDENED_RUNTIME)
+    set(QT_MAC_HARDENED_RUNTIME_OPT -hardened-runtime)
+  endif()
+
+  # -timestamp
+  if(ARGMAC_SECURE_TIMESTAMP)
+    set(QT_MAC_SECURE_TIMESTAMP_OPT -timestamp)
   endif()
 
   # -qmldir
@@ -420,19 +449,21 @@ function(add_qt_mac_app TARGET)
     ${QT_MAC_QML_DIR_OPT}
     ${QT_MAC_PLUGINS_OPT}
     ${QT_MAC_STRIP_OPT}
-    ${QT_MAC_VERBOSE_OPT}
+    ${QT_MAC_APPSTORE_COMPLIANT_OPT}
+    ${QT_MAC_HARDENED_RUNTIME_OPT}
+    ${QT_MAC_SECURE_TIMESTAMP_OPT}
     ${QT_MAC_CODESIGN_OPT}
-      -appstore-compliant
+    ${QT_MAC_VERBOSE_OPT}
   )
+
+  message(STATUS "QT_MAC_OPT : ${QT_MAC_OPT}")
 
   # Call macdeployqt
   add_custom_target(${QT_MAC_TARGET_APP}
     ${QT_MAC_ALL}
     DEPENDS ${TARGET} ${ARGMAC_DEPENDS}
-    WORKING_DIRECTORY $<TARGET_BUNDLE_DIR:${TARGET}>/..
-    COMMAND ${QT_MAC_DEPLOY_APP}
-      $<TARGET_FILE_NAME:${TARGET}>.app
-      ${QT_MAC_OPT}
+    COMMAND echo "Run macdeployqt for app"
+    COMMAND ${QT_MAC_DEPLOY_APP} $<TARGET_BUNDLE_DIR:${TARGET}> ${QT_MAC_OPT}
 
     COMMENT "Deploy app with ${QT_MAC_DEPLOY_APP}"
   )
@@ -442,13 +473,10 @@ function(add_qt_mac_app TARGET)
     add_custom_target(${QT_MAC_TARGET_DMG}
       ${QT_MAC_ALL}
       DEPENDS ${TARGET} ${ARGMAC_DEPENDS}
-      WORKING_DIRECTORY $<TARGET_BUNDLE_DIR:${TARGET}>/..
-      # Make sure previous dmg file is removed
-      COMMAND ${CMAKE_COMMAND} -E rm -f $<TARGET_FILE_NAME:${TARGET}>.dmg
-      COMMAND ${QT_MAC_DEPLOY_APP}
-        $<TARGET_FILE_NAME:${TARGET}>.app
-        ${QT_MAC_OPT}
-        -dmg
+      COMMAND echo "Remove old dmg $<TARGET_BUNDLE_DIR:${TARGET}>/../$<TARGET_FILE_NAME:${TARGET}>.dmg"
+      COMMAND ${CMAKE_COMMAND} -E rm -f $<TARGET_BUNDLE_DIR:${TARGET}>/../$<TARGET_FILE_NAME:${TARGET}>.dmg
+      COMMAND echo "Run macdeployqt for dmg"
+      COMMAND ${QT_MAC_DEPLOY_APP} $<TARGET_BUNDLE_DIR:${TARGET}> ${QT_MAC_OPT} -dmg
 
       COMMENT "Deploy dmg with ${QT_MAC_DEPLOY_APP}"
     )
