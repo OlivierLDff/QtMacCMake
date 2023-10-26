@@ -86,7 +86,6 @@ function(add_qt_mac_app TARGET)
     CUSTOM_ENTITLEMENTS
     CUSTOM_PLIST
     CODE_SIGN_IDENTITY
-    SIGN_FOR_NOTARIZATION_IDENTITY
     TEAM_ID
     PROVISIONING_PROFILE_SPECIFIER
     COPYRIGHT
@@ -144,11 +143,6 @@ function(add_qt_mac_app TARGET)
   endif()
   if("${QT_MAC_CODE_SIGN_IDENTITY}" STREQUAL "")
     set(QT_MAC_CODE_SIGN_IDENTITY "Mac Development")
-  endif()
-
-  # Allow user to override QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY from cache/command line
-  if(NOT QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY)
-    set(QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY ${ARGMAC_SIGN_FOR_NOTARIZATION_IDENTITY})
   endif()
 
   # Allow user to override QT_MAC_TEAM_ID from cache/command line
@@ -296,7 +290,6 @@ function(add_qt_mac_app TARGET)
     message(STATUS "CUSTOM_PLIST                        : ${QT_MAC_CUSTOM_PLIST}")
     message(STATUS "CUSTOM_ENTITLEMENTS                 : ${QT_MAC_CUSTOM_ENTITLEMENTS}")
     message(STATUS "CODE_SIGN_IDENTITY                  : ${QT_MAC_CODE_SIGN_IDENTITY}")
-    message(STATUS "SIGN_FOR_NOTARIZATION_IDENTITY      : ${QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY}")
     message(STATUS "TEAM_ID                             : ${QT_MAC_TEAM_ID}")
     if(QT_MAC_PROVISIONING_PROFILE_SPECIFIER)
       message(STATUS "PROVISIONING_PROFILE_SPECIFIER      : ${QT_MAC_PROVISIONING_PROFILE_SPECIFIER}")
@@ -357,6 +350,10 @@ function(add_qt_mac_app TARGET)
   # Set AppIcon Catalog
   if(QT_MAC_CATALOG_APPICON)
     qt_mac_set_xcode_property (${TARGET} ASSETCATALOG_COMPILER_APPICON_NAME ${QT_MAC_CATALOG_APPICON})
+  endif()
+
+  if(QT_MAC_BUNDLE_IDENTIFIER)
+    qt_mac_set_xcode_property(${TARGET} PRODUCT_BUNDLE_IDENTIFIER ${QT_MAC_BUNDLE_IDENTIFIER})
   endif()
 
   # Make sure a publish dialog is set in XCode.
@@ -431,19 +428,6 @@ function(add_qt_mac_app TARGET)
       set(QT_MAC_CODESIGN_OPT "-codesign=${CMAKE_MATCH_1}")
     endif()
 
-    if(NOT "${QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY}" STREQUAL "")
-      # Find notarization certificate to sign libraries deployed by macdeployqt
-      string(REGEX MATCH "([0-9A-Z]+) \"[ :.@\"a-zA-Z0-9]*${QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY}[ :.@\"a-zA-Z0-9]*\\(${QT_MAC_TEAM_ID}\\)\"" CODESIGN_LINE "${XCODE_CODE_SIGNING_IDENTITIES}")
-
-      if("${CMAKE_MATCH_1}" STREQUAL "")
-        message(WARNING "Fail to find private key for notarization signing matching TEAM_ID ${QT_MAC_TEAM_ID} and identity ${QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY}")
-      else()
-        set(QT_MAC_SIGN_FOR_NOTARIZATION_OPT "-sign-for-notarization=${CMAKE_MATCH_1}")
-      endif()
-    else()
-      message(WARNING "The app won't be signed for notarization because QT_MAC_SIGN_FOR_NOTARIZATION_IDENTITY isn't set")
-    endif()
-
     # Find signing certificate to create ipa
     string(REGEX MATCH "([0-9A-Z]+) \"[ :.@\"a-zA-Z0-9]*Mac Distribution Installer[ :.@\"a-zA-Z0-9]*\\(${QT_MAC_TEAM_ID}\\)\"" INSTALLER_CERTIFICATE_LINE "${XCODE_CODE_SIGNING_IDENTITIES}")
 
@@ -462,22 +446,21 @@ function(add_qt_mac_app TARGET)
     ${QT_MAC_QML_DIR_OPT}
     ${QT_MAC_PLUGINS_OPT}
     ${QT_MAC_STRIP_OPT}
-    ${QT_MAC_VERBOSE_OPT}
     ${QT_MAC_APPSTORE_COMPLIANT_OPT}
     ${QT_MAC_HARDENED_RUNTIME_OPT}
     ${QT_MAC_SECURE_TIMESTAMP_OPT}
     ${QT_MAC_CODESIGN_OPT}
-    ${QT_MAC_SIGN_FOR_NOTARIZATION_OPT}
+    ${QT_MAC_VERBOSE_OPT}
   )
+
+  message(STATUS "QT_MAC_OPT : ${QT_MAC_OPT}")
 
   # Call macdeployqt
   add_custom_target(${QT_MAC_TARGET_APP}
     ${QT_MAC_ALL}
     DEPENDS ${TARGET} ${ARGMAC_DEPENDS}
-    WORKING_DIRECTORY $<TARGET_BUNDLE_DIR:${TARGET}>/..
-    COMMAND ${QT_MAC_DEPLOY_APP}
-      $<TARGET_FILE_NAME:${TARGET}>.app
-      ${QT_MAC_OPT}
+    COMMAND echo "Run macdeployqt for app"
+    COMMAND ${QT_MAC_DEPLOY_APP} $<TARGET_BUNDLE_DIR:${TARGET}> ${QT_MAC_OPT}
 
     COMMENT "Deploy app with ${QT_MAC_DEPLOY_APP}"
   )
@@ -487,13 +470,9 @@ function(add_qt_mac_app TARGET)
     add_custom_target(${QT_MAC_TARGET_DMG}
       ${QT_MAC_ALL}
       DEPENDS ${TARGET} ${ARGMAC_DEPENDS}
-      WORKING_DIRECTORY $<TARGET_BUNDLE_DIR:${TARGET}>/..
-      # Make sure previous dmg file is removed
-      COMMAND ${CMAKE_COMMAND} -E rm -f $<TARGET_FILE_NAME:${TARGET}>.dmg
-      COMMAND ${QT_MAC_DEPLOY_APP}
-        $<TARGET_FILE_NAME:${TARGET}>.app
-        ${QT_MAC_OPT}
-        -dmg
+      COMMAND echo "Run macdeployqt for dmg"
+      COMMAND ${CMAKE_COMMAND} -E rm -f $<TARGET_BUNDLE_DIR:${TARGET}>/$<TARGET_FILE_NAME:${TARGET}>.dmg
+      COMMAND ${QT_MAC_DEPLOY_APP} $<TARGET_BUNDLE_DIR:${TARGET}> ${QT_MAC_OPT} -dmg
 
       COMMENT "Deploy dmg with ${QT_MAC_DEPLOY_APP}"
     )

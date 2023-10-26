@@ -221,10 +221,6 @@ add_qt_ios_app(MyApp
 )
 ```
 
-**SIGN_FOR_NOTARIZATION_IDENTITY**
-
-Code signing is required in order to deploy to real ios device (ie non simulator). More info [here](https://developer.apple.com/support/code-signing/).
-
 **TEAM_ID**
 
 The team id used to sign the application. *By default "AAAAAAAA."*
