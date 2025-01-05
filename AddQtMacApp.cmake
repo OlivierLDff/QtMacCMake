@@ -32,11 +32,19 @@
 #
 
 # find the Qt root directory
-# todo : support Qt6
-if(NOT Qt5Core_DIR)
-  find_package(Qt5 COMPONENTS Core REQUIRED)
+if(NOT Qt5Core_DIR AND NOT Qt6Core_DIR)
+  if(NOT DEFINED QT_VERSION_MAJOR)
+    find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
+  endif()
+elseif(Qt5Core_DIR)
+  set(QT_VERSION_MAJOR 5)
+elseif(Qt6Core_DIR)
+  set(QT_VERSION_MAJOR 6)
+else()
+  message(FATAL_ERROR "No supported Qt version found, please provide Qt<VERSION>Core_DIR")
 endif()
-get_filename_component(QT_MAC_QT_ROOT "${Qt5Core_DIR}/../../.." ABSOLUTE)
+
+get_filename_component(QT_MAC_QT_ROOT "${Qt${QT_VERSION_MAJOR}Core_DIR}/../../.." ABSOLUTE)
 message(STATUS "Found Qt for Mac: ${QT_MAC_QT_ROOT}")
 
 set(QT_MAC_QT_ROOT ${QT_MAC_QT_ROOT})
